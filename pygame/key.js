@@ -9,9 +9,9 @@ var $builtinmodule = function (name) {
     });
     mod.get_repeat = new Sk.builtin.func(function () {
         if (PygameLib.repeatKeys) {
-            return Sk.builtin.tuple([1, 1]);
+            return new Sk.builtin.tuple([1, 1]);
         } else {
-            return Sk.builtin.tuple([0, 0]);
+            return new Sk.builtin.tuple([0, 0]);
         }
     });
     mod.get_focused = new Sk.builtin.func(function () {

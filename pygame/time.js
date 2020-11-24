@@ -1,3 +1,9 @@
+const PREVTIME_STR = new Sk.builtin.str("prevTime");
+const GETTIME_STR = new Sk.builtin.str("getTime");
+const RAWTIME_STR = new Sk.builtin.str("rawTime");
+const FPSARRAY_STR = new Sk.builtin.str("fpsArray");
+const FPSIDX_STR = new Sk.builtin.str("fpsIdx");
+
 var $builtinmodule = function (name) {
     mod = {};
     mod.wait = new Sk.builtin.func(function (amount) {
@@ -40,11 +46,11 @@ var $builtinmodule = function (name) {
 
 function time_Clock($gbl, $loc) {
     $loc.__init__ = new Sk.builtin.func(function (self) {
-        Sk.abstr.sattr(self, 'prevTime', Sk.builtin.none.none$, false);
-        Sk.abstr.sattr(self, 'getTime', Sk.builtin.none.none$, false);
-        Sk.abstr.sattr(self, 'rawTime', Sk.ffi.remapToPy(0), false);
-        Sk.abstr.sattr(self, 'fpsArray', Sk.ffi.remapToPy([]), false);
-        Sk.abstr.sattr(self, 'fpsIdx', Sk.ffi.remapToPy(0));
+        Sk.abstr.sattr(self, PREVTIME_STR, Sk.builtin.none.none$, false);
+        Sk.abstr.sattr(self, GETTIME_STR, Sk.builtin.none.none$, false);
+        Sk.abstr.sattr(self, RAWTIME_STR, Sk.ffi.remapToPy(0), false);
+        Sk.abstr.sattr(self, FPSARRAY_STR, Sk.ffi.remapToPy([]), false);
+        Sk.abstr.sattr(self, FPSIDX_STR, Sk.ffi.remapToPy(0));
         return Sk.builtin.none.none$;
     }, $gbl);
     $loc.__init__.co_name = new Sk.builtins['str']('__init__');
@@ -53,28 +59,28 @@ function time_Clock($gbl, $loc) {
 
         var currTime = Date.now();
         var mills = 0;
-        if (Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'prevTime', false)) !== null) {
-            var prevTime = Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'prevTime', false));
+        if (Sk.ffi.remapToJs(Sk.abstr.gattr(self, PREVTIME_STR, false)) !== null) {
+            var prevTime = Sk.ffi.remapToJs(Sk.abstr.gattr(self, PREVTIME_STR, false));
             mills = (currTime - prevTime);
         }
-        Sk.abstr.sattr(self, 'prevTime', Sk.ffi.remapToPy(currTime), false);
-        Sk.abstr.sattr(self, 'getTime', Sk.ffi.remapToPy(mills), false);
-        var arr = Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'fpsArray', false));
-        var idx = Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'fpsIdx', false));
+        Sk.abstr.sattr(self, PREVTIME_STR, Sk.ffi.remapToPy(currTime), false);
+        Sk.abstr.sattr(self, GETTIME_STR, Sk.ffi.remapToPy(mills), false);
+        var arr = Sk.ffi.remapToJs(Sk.abstr.gattr(self, FPSARRAY_STR, false));
+        var idx = Sk.ffi.remapToJs(Sk.abstr.gattr(self, FPSIDX_STR, false));
         if (arr.length < 10) {
             arr.push(mills);
         } else {
             arr[idx] = mills;
         }
         idx = (idx + 1) % 10;
-        Sk.abstr.sattr(self, 'fpsArray', Sk.ffi.remapToPy(arr), false);
-        Sk.abstr.sattr(self, 'fpsIdx', Sk.ffi.remapToPy(idx), false);
+        Sk.abstr.sattr(self, FPSARRAY_STR, Sk.ffi.remapToPy(arr), false);
+        Sk.abstr.sattr(self, FPSIDX_STR, Sk.ffi.remapToPy(idx), false);
         if (framerate !== undefined) {
             var timeout = 1000 / Sk.ffi.remapToJs(framerate);
             return new Sk.misceval.promiseToSuspension(
                 new Promise(function (resolve) {
                     var f = function () {
-                        Sk.abstr.sattr(self, 'rawTime', Sk.ffi.remapToPy(Date.now() - currTime), false);
+                        Sk.abstr.sattr(self, RAWTIME_STR, Sk.ffi.remapToPy(Date.now() - currTime), false);
                         resolve(mills);
                     };
 
@@ -83,7 +89,7 @@ function time_Clock($gbl, $loc) {
                     }
                 }));
         }
-        Sk.abstr.sattr(self, 'rawTime', Sk.ffi.remapToPy(Date.now() - currTime), false);
+        Sk.abstr.sattr(self, RAWTIME_STR, Sk.ffi.remapToPy(Date.now() - currTime), false);
         return Sk.ffi.remapToPy(mills);
     }, $gbl);
     $loc.tick.co_name = new Sk.builtins['str']('tick');
@@ -93,19 +99,19 @@ function time_Clock($gbl, $loc) {
     $loc.tick_busy_loop = new Sk.builtin.func(function (self, framerate) {
         var currTime = Date.now();
         var mills = 0;
-        if (Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'prevTime', false)) !== null) {
-            var prevTime = Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'prevTime', false));
+        if (Sk.ffi.remapToJs(Sk.abstr.gattr(self, PREVTIME_STR, false)) !== null) {
+            var prevTime = Sk.ffi.remapToJs(Sk.abstr.gattr(self, PREVTIME_STR, false));
             mills = (currTime - prevTime);
         }
-        Sk.abstr.sattr(self, 'prevTime', Sk.ffi.remapToPy(currTime), false);
-        Sk.abstr.sattr(self, 'getTime', Sk.ffi.remapToPy(mills), false);
+        Sk.abstr.sattr(self, PREVTIME_STR, Sk.ffi.remapToPy(currTime), false);
+        Sk.abstr.sattr(self, GETTIME_STR, Sk.ffi.remapToPy(mills), false);
 
         if (framerate !== undefined) {
             var timeout = 1000 / Sk.ffi.remapToJs(framerate);
             return new Sk.misceval.promiseToSuspension(
                 new Promise(function (resolve) {
                     var f = function () {
-                        Sk.abstr.sattr(self, 'rawTime', Sk.ffi.remapToPy(Date.now() - currTime), false);
+                        Sk.abstr.sattr(self, RAWTIME_STR, Sk.ffi.remapToPy(Date.now() - currTime), false);
                         resolve(mills);
                     };
                     if (PygameLib.running) {
@@ -113,7 +119,7 @@ function time_Clock($gbl, $loc) {
                     }
                 }));
         }
-        Sk.abstr.sattr(self, 'rawTime', Sk.ffi.remapToPy(Date.now() - currTime), false);
+        Sk.abstr.sattr(self, RAWTIME_STR, Sk.ffi.remapToPy(Date.now() - currTime), false);
         return Sk.ffi.remapToPy(mills);
     }, $gbl);
     $loc.tick_busy_loop.co_name = new Sk.builtins['str']('tick_busy_loop');
@@ -121,17 +127,17 @@ function time_Clock($gbl, $loc) {
     $loc.tick_busy_loop.$defaults = [Sk.ffi.remapToPy(0)];
 
     $loc.get_time = new Sk.builtin.func(function (self) {
-        return Sk.abstr.gattr(self, 'getTime', false);
+        return Sk.abstr.gattr(self, GETTIME_STR, false);
     });
     $loc.get_time.co_name = new Sk.builtins['str']('get_time');
 
     $loc.get_rawtime = new Sk.builtin.func(function (self) {
-        return Sk.abstr.gattr(self, 'rawTime', false);
+        return Sk.abstr.gattr(self, RAWTIME_STR, false);
     });
     $loc.get_rawtime.co_name = new Sk.builtins['str']('get_rawtime');
 
     $loc.get_fps = new Sk.builtin.func(function (self) {
-        var arr = Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'fpsArray', false));
+        var arr = Sk.ffi.remapToJs(Sk.abstr.gattr(self, FPSARRAY_STR, false));
         if (arr.length < 10 || arr[0] === 0) {
             return Sk.ffi.remapToPy(0);
         }

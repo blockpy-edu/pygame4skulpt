@@ -7,7 +7,7 @@ var $builtinmodule = function (name) {
         if (Sk.abstr.typeName(xbool) !== "bool" || Sk.abstr.typeName(ybool) !== "bool") {
             throw new Sk.builtin.TypeError("Wrong arguments");
         }
-        var t = Sk.builtin.tuple([surf.width, surf.height]);
+        var t = new Sk.builtin.tuple([surf.width, surf.height]);
         var ret = Sk.misceval.callsim(PygameLib.SurfaceType, t);
         ret.context2d.save();
         var xb = Sk.ffi.remapToJs(xbool);
@@ -36,7 +36,7 @@ var $builtinmodule = function (name) {
             }
             return surf;
         }
-        var t = Sk.builtin.tuple([w, h]);
+        var t = new Sk.builtin.tuple([w, h]);
         var xs = w / surf.width;
         var ys = h / surf.height;
         var ret = Sk.misceval.callsim(PygameLib.SurfaceType, t);

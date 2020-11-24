@@ -18,8 +18,8 @@ var bbox = function (min_h, max_h, min_w, max_w) {
     var height = max_h - min_h;
     var top = min_h;
     var left = min_w;
-    t = Sk.builtin.tuple([left, top]);
-    return Sk.misceval.callsim(PygameLib.RectType, Sk.builtin.tuple([left, top]), Sk.builtin.tuple([width, height]));
+    t = new Sk.builtin.tuple([left, top]);
+    return Sk.misceval.callsim(PygameLib.RectType, new Sk.builtin.tuple([left, top]), new Sk.builtin.tuple([width, height]));
 };
 
 //pygame.draw.rect()
@@ -44,7 +44,7 @@ var draw_rect = function (surface, color, rect, width = 0) {
         ctx.fillRect(left, top, width, height);
     }
 
-    return Sk.misceval.callsim(PygameLib.RectType, Sk.builtin.tuple([left, top]), Sk.builtin.tuple([width, height]));
+    return Sk.misceval.callsim(PygameLib.RectType, new Sk.builtin.tuple([left, top]), new Sk.builtin.tuple([width, height]));
 };
 
 //pygame.draw.polygon()
@@ -113,7 +113,7 @@ var draw_oval = function (surface, color, rect, start_angle, stop_angle, width, 
         ctx.fill();
     }
 
-    return Sk.misceval.callsim(PygameLib.RectType, Sk.builtin.tuple([rect_js[0], rect_js[1]]), Sk.builtin.tuple([rect_js[2], rect_js[3]]));
+    return Sk.misceval.callsim(PygameLib.RectType, new Sk.builtin.tuple([rect_js[0], rect_js[1]]), new Sk.builtin.tuple([rect_js[2], rect_js[3]]));
 };
 
 //pygame.draw.line()
@@ -130,14 +130,14 @@ var draw_line = function (surface, color, start_pos, end_pos, width = 1) {
     var by = end_pos_js[1];
     var points;
     if (Math.abs(ax - bx) <= Math.abs(ay - by)) {
-        points = [Sk.builtin.tuple([ax - width_js / 2, ay]), Sk.builtin.tuple([ax + width_js / 2, ay]),
-            Sk.builtin.tuple([bx + width_js / 2, by]), Sk.builtin.tuple([bx - width_js / 2, by])];
-        points = Sk.builtin.list(points);
+        points = [new Sk.builtin.tuple([ax - width_js / 2, ay]), new Sk.builtin.tuple([ax + width_js / 2, ay]),
+            new Sk.builtin.tuple([bx + width_js / 2, by]), new Sk.builtin.tuple([bx - width_js / 2, by])];
+        points = new Sk.builtin.list(points);
     }
     else {
-        points = [Sk.builtin.tuple([ax, ay - width_js / 2]), Sk.builtin.tuple([ax, ay + width_js / 2]),
-            Sk.builtin.tuple([bx, by + width_js / 2]), Sk.builtin.tuple([bx, by - width_js / 2])];
-        points = Sk.builtin.list(points);
+        points = [new Sk.builtin.tuple([ax, ay - width_js / 2]), new Sk.builtin.tuple([ax, ay + width_js / 2]),
+            new Sk.builtin.tuple([bx, by + width_js / 2]), new Sk.builtin.tuple([bx, by - width_js / 2])];
+        points = new Sk.builtin.list(points);
     }
     draw_polygon(surface, color, points);
     var left = Math.min(start_pos_js[0], end_pos_js[0]);
@@ -175,7 +175,7 @@ var draw_lines = function (surface, color, closed, pointlist, width = 1) {
     }
     else {
         for (var i = 0; i < pointlist_js.length - 1; i++) {
-            draw_line(surface, color, Sk.builtin.tuple([pointlist_js[i][0], pointlist_js[i][1]]), Sk.builtin.tuple([pointlist_js[i + 1][0], pointlist_js[i + 1][1]]), width);
+            draw_line(surface, color, new Sk.builtin.tuple([pointlist_js[i][0], pointlist_js[i][1]]), new Sk.builtin.tuple([pointlist_js[i + 1][0], pointlist_js[i + 1][1]]), width);
         }
         return bbox(0, 0, 0, 0);
     }

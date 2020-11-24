@@ -13,7 +13,7 @@ var $builtinmodule = function (name) {
                 var img = new Image();
                 img.src = Sk.imgPath + Sk.ffi.remapToJs(filename);
                 img.onload = function () {
-                    var t = Sk.builtin.tuple([img.width, img.height]);
+                    var t = new Sk.builtin.tuple([img.width, img.height]);
                     var s = Sk.misceval.callsim(PygameLib.SurfaceType, t);
                     var ctx = s.offscreen_canvas.getContext("2d");
                     ctx.drawImage(img, 0, 0);

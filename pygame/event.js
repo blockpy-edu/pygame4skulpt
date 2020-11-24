@@ -68,8 +68,8 @@ function event_EventType_f($gbl, $loc) {
     $loc.__init__ = new Sk.builtin.func(function (self, type, dict) {
         Sk.builtin.pyCheckArgs('__init__', arguments, 2, 3, false, false);
         dict = dict || new Sk.builtin.dict();
-        Sk.abstr.sattr(self, 'dict', dict, false);
-        Sk.abstr.sattr(self, 'type', type, false);
+        Sk.abstr.sattr(self, Sk.builtin.str.$dict, dict, false);
+        Sk.abstr.sattr(self, new Sk.builtin.str('type'), type, false);
         dictjs = Sk.ffi.remapToJs(dict);
         for (k in dictjs) {
             Sk.abstr.sattr(self, k, Sk.ffi.remapToPy(dictjs[k]), false);
@@ -80,8 +80,8 @@ function event_EventType_f($gbl, $loc) {
     $loc.__init__.co_varnames = ['self', 'type', 'dict'];
 
     $loc.__repr__ = new Sk.builtin.func(function (self) {
-        var dict = Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'dict', false));
-        var type = Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'type', false));
+        var dict = Sk.ffi.remapToJs(Sk.abstr.gattr(self, Sk.builtin.str.$dict, false));
+        var type = Sk.ffi.remapToJs(Sk.abstr.gattr(self, new Sk.builtin.str('type'), false));
         return Sk.ffi.remapToPy('<Event(' + type + ' ' + dict + ')>');
     });
     $loc.__repr__.co_name = new Sk.builtins['str']('__repr__');

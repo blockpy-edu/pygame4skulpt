@@ -1,3 +1,9 @@
+const NAME_STR = new Sk.builtin.str('name');
+const SZ_STR = new Sk.builtin.str('sz');
+const BOLD_STR = new Sk.builtin.str('bold');
+const ITALIC_STR = new Sk.builtin.str('italic');
+const UNDERLINE_STR = new Sk.builtin.str('underline');
+
 $builtinmodule = function (name) {
     mod = {};
     mod.__is_initialized = false;
@@ -5,19 +11,19 @@ $builtinmodule = function (name) {
     PygameLib.FontType = mod.Font;
     mod.SysFont = new Sk.builtin.func(function (name, size, bold, italic) {
         var font = Sk.misceval.callsim(PygameLib.FontType, size);
-        Sk.abstr.sattr(font, 'name', name, false);
-        Sk.abstr.sattr(font, 'sz', size, false);
+        Sk.abstr.sattr(font, NAME_STR, name, false);
+        Sk.abstr.sattr(font, SZ_STR, size, false);
         if (bold === undefined) {
-            Sk.abstr.sattr(font, 'bold', Sk.ffi.remapToPy(false), false);
+            Sk.abstr.sattr(font, BOLD_STR, Sk.ffi.remapToPy(false), false);
         } else {
-            Sk.abstr.sattr(font, 'bold', bold, false);
+            Sk.abstr.sattr(font, BOLD_STR, bold, false);
         }
         if (italic === undefined) {
-            Sk.abstr.sattr(font, 'italic', Sk.ffi.remapToPy(false), false);
+            Sk.abstr.sattr(font, ITALIC_STR, Sk.ffi.remapToPy(false), false);
         } else {
-            Sk.abstr.sattr(font, 'italic', italic, false);
+            Sk.abstr.sattr(font, ITALIC_STR, italic, false);
         }
-        Sk.abstr.sattr(font, 'underline', Sk.ffi.remapToPy(false), false);
+        Sk.abstr.sattr(font, UNDERLINE_STR, Sk.ffi.remapToPy(false), false);
         return font;
     });
     mod.init = new Sk.builtin.func(function () {
@@ -46,11 +52,11 @@ $builtinmodule = function (name) {
 
 function font_Font($gbl, $loc) {
     $loc.__init__ = new Sk.builtin.func(function (self, filename, size) {
-        Sk.abstr.sattr(self, 'name', name, false);
-        Sk.abstr.sattr(self, 'sz', size, false);
-        Sk.abstr.sattr(self, 'bold', Sk.ffi.remapToPy(false), false);
-        Sk.abstr.sattr(self, 'italic', Sk.ffi.remapToPy(false), false);
-        Sk.abstr.sattr(self, 'underline', Sk.ffi.remapToPy(false), false);
+        Sk.abstr.sattr(self, NAME_STR, name, false);
+        Sk.abstr.sattr(self, SZ_STR, size, false);
+        Sk.abstr.sattr(self, BOLD_STR, Sk.ffi.remapToPy(false), false);
+        Sk.abstr.sattr(self, ITALIC_STR, Sk.ffi.remapToPy(false), false);
+        Sk.abstr.sattr(self, UNDERLINE_STR, Sk.ffi.remapToPy(false), false);
         return Sk.builtin.none.none$;
     });
     $loc.render = new Sk.builtin.func(renderFont, $gbl);
@@ -62,44 +68,44 @@ function font_Font($gbl, $loc) {
     $loc.size.co_name = new Sk.builtins['str']('size');
 
     $loc.set_underline = new Sk.builtin.func(function (self, bool) {
-        Sk.abstr.sattr(self, 'underline', bool, false);
+        Sk.abstr.sattr(self, UNDERLINE_STR, bool, false);
     }, $gbl);
     $loc.get_underline = new Sk.builtin.func(function (self) {
-        return Sk.abstr.gattr(self, 'underline', false);
+        return Sk.abstr.gattr(self, UNDERLINE_STR, false);
     }, $gbl);
 
     $loc.set_italic = new Sk.builtin.func(function (self, bool) {
-        Sk.abstr.sattr(self, 'italic', bool, false);
+        Sk.abstr.sattr(self, ITALIC_STR, bool, false);
     }, $gbl);
     $loc.get_italic = new Sk.builtin.func(function (self) {
-        return Sk.abstr.gattr(self, 'italic', false);
+        return Sk.abstr.gattr(self, ITALIC_STR, false);
     }, $gbl);
 
     $loc.set_bold = new Sk.builtin.func(function (self, bool) {
-        Sk.abstr.sattr(self, 'bold', bool, false);
+        Sk.abstr.sattr(self, BOLD_STR, bool, false);
     }, $gbl);
     $loc.get_bold = new Sk.builtin.func(function (self) {
-        return Sk.abstr.gattr(self, 'bold', false);
+        return Sk.abstr.gattr(self, BOLD_STR, false);
     }, $gbl);
 }
 
 function fontSize(self, text) {
     var msg = Sk.ffi.remapToJs(text);
-    var h = 1.01 * Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'sz', false));
-    var fontName = Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'name', false));
+    var h = 1.01 * Sk.ffi.remapToJs(Sk.abstr.gattr(self, SZ_STR, false));
+    var fontName = Sk.ffi.remapToJs(Sk.abstr.gattr(self, NAME_STR, false));
     fontName = "" + h + "px " + fontName;
-    var bold = Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'bold', false));
+    var bold = Sk.ffi.remapToJs(Sk.abstr.gattr(self, BOLD_STR, false));
     if (bold) {
         fontName = 'bold ' + fontName;
     }
-    var italic = Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'italic', false));
+    var italic = Sk.ffi.remapToJs(Sk.abstr.gattr(self, ITALIC_STR, false));
     if (italic) {
         fontName = 'italic ' + fontName;
     }
     var w = 300;
 
     // Create a dummy canvas in order to exploit its measureText() method
-    var t = Sk.builtin.tuple([w, h]);
+    var t = new Sk.builtin.tuple([w, h]);
     var s = Sk.misceval.callsim(PygameLib.SurfaceType, t, false);
     var ctx = s.offscreen_canvas.getContext("2d");
     ctx.font = fontName;
@@ -109,29 +115,29 @@ function fontSize(self, text) {
 function renderFont(self, text, antialias, color, background) {
     var msg = Sk.ffi.remapToJs(text);
     var STRETCH_CONST = 1.1;
-    var h = STRETCH_CONST * Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'sz', false));
-    var fontName = Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'name', false));
+    var h = STRETCH_CONST * Sk.ffi.remapToJs(Sk.abstr.gattr(self, SZ_STR, false));
+    var fontName = Sk.ffi.remapToJs(Sk.abstr.gattr(self, NAME_STR, false));
     fontName = "" + h + "px " + fontName;
-    var bold = Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'bold', false));
+    var bold = Sk.ffi.remapToJs(Sk.abstr.gattr(self, BOLD_STR, false));
     if (bold) {
         fontName = 'bold ' + fontName;
     }
-    var italic = Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'italic', false));
+    var italic = Sk.ffi.remapToJs(Sk.abstr.gattr(self, ITALIC_STR, false));
     if (italic) {
         fontName = 'italic ' + fontName;
     }
-    var underline = Sk.ffi.remapToJs(Sk.abstr.gattr(self, 'underline', false));
+    var underline = Sk.ffi.remapToJs(Sk.abstr.gattr(self, UNDERLINE_STR, false));
 
     var w = 300;
 
     // Create a dummy canvas in order to exploit its measureText() method
-    var t = Sk.builtin.tuple([w, h]);
+    var t = new Sk.builtin.tuple([w, h]);
     var s = Sk.misceval.callsim(PygameLib.SurfaceType, t, false);
     var ctx = s.offscreen_canvas.getContext("2d");
     ctx.font = fontName;
     w = ctx.measureText(msg).width;
 
-    t = Sk.builtin.tuple([w, h]);
+    t = new Sk.builtin.tuple([w, h]);
     s = Sk.misceval.callsim(PygameLib.SurfaceType, t, false);
     ctx = s.offscreen_canvas.getContext("2d");
     if (background !== undefined) {
