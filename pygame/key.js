@@ -45,13 +45,23 @@ var $builtinmodule = function (name) {
         }
 
     });
-    mod.name = new Sk.builtin.func(function (idx) {
+    // mod.name =
+    mod["name_$rw$"] = new Sk.builtin.func(function (idx) {
         var i = Sk.ffi.remapToJs(idx);
         if (i < 0 || i >= 323) {
             return Sk.ffi.remapToPy("unknown key");
         }
         return Sk.ffi.remapToPy(keyToName[i]);
     });
+    mod["key_code"] = new Sk.builtin.func(function (idx) {
+        var i = Sk.ffi.remapToJs(idx);
+        let index = keyToName.indexOf(i);
+        if (index === -1) {
+            return Sk.ffi.remapToPy("unknown key");
+        }
+        return Sk.ffi.remapToPy(index);
+    });
+
     return mod;
 };
 

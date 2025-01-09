@@ -20,22 +20,28 @@ var $builtinmodule = function (name) {
             f = Sk.ffi.remapToJs(flags);
         }
         if (f & PygameLib.constants.FULLSCREEN) {
-            mod.surface = Sk.misceval.callsim(PygameLib.SurfaceType, size, true, true);
+            mod.surface = Sk.misceval.callsim(PygameLib.SurfaceType, size, Sk.ffi.remapToPy(0x1100));
         } else {
-            mod.surface = Sk.misceval.callsim(PygameLib.SurfaceType, size, false, true);
+            mod.surface = Sk.misceval.callsim(PygameLib.SurfaceType, size, Sk.ffi.remapToPy(0x1000));
         }
+        const w = skulptGetIndex(size, 0);
+        const h = skulptGetIndex(size, 1);
+        Sk.console.handlePygameResize(w, h);
 
         PygameLib.surface = mod.surface;
         return mod.surface;
     });
+    mod.set_mode.co_name = new Sk.builtins['str']('set_mode');
+    mod.set_mode.co_varnames = ['size', 'flags'];
+
     mod.get_surface = new Sk.builtin.func(function () {
         return PygameLib.surface;
     });
-    mod.update = new Sk.builtin.func(function () {
-        Sk.misceval.callsim(mod.surface.update, mod.surface);
+    mod.update = new Sk.builtin.func(function (rectangle) {
+        Sk.misceval.callsim(mod.surface.update, mod.surface, rectangle);
     });
     mod.flip = new Sk.builtin.func(function () {
-        Sk.misceval.callsim(mod.surface.update, mod.surface);
+        Sk.misceval.callsim(mod.surface.update, mod.surface, undefined);
     });
     mod.set_caption = new Sk.builtin.func(function (caption) {
         PygameLib.caption = Sk.ffi.remapToJs(caption);

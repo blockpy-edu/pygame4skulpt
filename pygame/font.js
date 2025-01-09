@@ -10,7 +10,7 @@ $builtinmodule = function (name) {
     mod.Font = Sk.misceval.buildClass(mod, font_Font, "FontType", []);
     PygameLib.FontType = mod.Font;
     mod.SysFont = new Sk.builtin.func(function (name, size, bold, italic) {
-        var font = Sk.misceval.callsim(PygameLib.FontType, size);
+        var font = Sk.misceval.callsim(PygameLib.FontType, name, size);
         Sk.abstr.sattr(font, NAME_STR, name, false);
         Sk.abstr.sattr(font, SZ_STR, size, false);
         if (bold === undefined) {
@@ -106,7 +106,7 @@ function fontSize(self, text) {
 
     // Create a dummy canvas in order to exploit its measureText() method
     var t = new Sk.builtin.tuple([w, h]);
-    var s = Sk.misceval.callsim(PygameLib.SurfaceType, t, false);
+    var s = Sk.misceval.callsim(PygameLib.SurfaceType, t);
     var ctx = s.offscreen_canvas.getContext("2d");
     ctx.font = fontName;
     return new Sk.builtin.tuple([ctx.measureText(msg).width, h]);
@@ -132,13 +132,14 @@ function renderFont(self, text, antialias, color, background) {
 
     // Create a dummy canvas in order to exploit its measureText() method
     var t = new Sk.builtin.tuple([w, h]);
-    var s = Sk.misceval.callsim(PygameLib.SurfaceType, t, false);
+    var s = Sk.misceval.callsim(PygameLib.SurfaceType, t);
     var ctx = s.offscreen_canvas.getContext("2d");
     ctx.font = fontName;
     w = ctx.measureText(msg).width;
-
+    console.log(w, h);
     t = new Sk.builtin.tuple([w, h]);
-    s = Sk.misceval.callsim(PygameLib.SurfaceType, t, false);
+
+    s = Sk.misceval.callsim(PygameLib.SurfaceType, t);
     ctx = s.offscreen_canvas.getContext("2d");
     if (background !== undefined) {
         var background_js = PygameLib.extract_color(background);

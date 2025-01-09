@@ -13,28 +13,29 @@ Sk.insertEvent = function (eventName) {
     var e = [];
     switch (eventName) {
         case "left":
-            e = [PygameLib.constants.KEYDOWN, { key: PygameLib.constants.K_LEFT }];
+            e = [PygameLib.constants.KEYDOWN, { key: PygameLib.constants.K_LEFT, unicode: "", mod: 0 }];
             break;
         case "right":
-            e = [PygameLib.constants.KEYDOWN, { key: PygameLib.constants.K_RIGHT }];
+            e = [PygameLib.constants.KEYDOWN, { key: PygameLib.constants.K_RIGHT, unicode: "", mod: 0 }];
             break;
         case "up":
-            e = [PygameLib.constants.KEYDOWN, { key: PygameLib.constants.K_UP }];
+            e = [PygameLib.constants.KEYDOWN, { key: PygameLib.constants.K_UP, unicode: "", mod: 0 }];
             break;
         case "down":
-            e = [PygameLib.constants.KEYDOWN, { key: PygameLib.constants.K_DOWN }];
+            e = [PygameLib.constants.KEYDOWN, { key: PygameLib.constants.K_DOWN, unicode: "", mod: 0 }];
             break;
         case "quit":
-            e = [PygameLib.constants.QUIT, { key: PygameLib.constants.K_ESCAPE }];
+            e = [PygameLib.constants.QUIT, { key: PygameLib.constants.K_ESCAPE, unicode: "", mod: 0 }];
             break;
     }
     PygameLib.eventQueue.unshift(e);
 };
 
 var PygameLib = {};
+Sk.pygameData = {};
 
 PygameLib.running = false;
-
+PygameLib.caption = "pygame window";
 
 PygameLib.extract_color = function (color) {
     var color_js = [0, 0, 0, 0];
@@ -45,8 +46,9 @@ PygameLib.extract_color = function (color) {
         color_js[3] = Sk.ffi.remapToJs(Sk.abstr.gattr(color, A_STR, false));
     } else {
         color_js = Sk.ffi.remapToJs(color);
-        if (color_js.length === 3) color_js.push(1);
+        if (color_js.length === 3) color_js.push(255);
     }
+    color_js[3] = color_js[3]/255;
     return color_js;
 };
 
@@ -63,6 +65,14 @@ PygameLib.extract_rect = function (rect) {
     return rect_js;
 };
 
+PygameLib.make_rect = function(a, b, c, d) {
+    const t = new Sk.builtin.tuple([Sk.ffi.remapToPy(a),
+                                       Sk.ffi.remapToPy(b),
+                                       Sk.ffi.remapToPy(c),
+                                       Sk.ffi.remapToPy(d),])
+    return Sk.misceval.callsim(PygameLib.RectType, t);
+};
+
 var createKeyboardEvent = function (event) {
     var e;
     var keyPGConstant;
@@ -72,23 +82,31 @@ var createKeyboardEvent = function (event) {
         keyPGConstant = PygameLib.constants.KEYDOWN;
     }
     var keyId = event.which;
+    // TODO: Support proper left/right handling
+    // event.location === KeyboardEvent.DOM_KEY_LOCATION_LEFT
+    const c = PygameLib.constants;
+    var mod = c.KMOD_NONE +
+        (c.KMOD_LSHIFT + c.KMOD_RSHIFT + c.KMOD_SHIFT) * event.shiftKey +
+        (c.KMOD_LCTRL + c.KMOD_RCTRL + c.KMOD_CTRL) * event.ctrlKey +
+        (c.KMOD_LALT + c.KMOD_RALT + c.KMOD_ALT) * event.altKey +
+        (c.KMOD_LMETA + c.KMOD_RMETA + c.KMOD_META) * event.metaKey;
 
     switch (event.which) {
         case 27:
-            return [PygameLib.constants.QUIT, { key: PygameLib.constants.K_ESCAPE }];
+            return [PygameLib.constants.QUIT, { key: PygameLib.constants.K_ESCAPE, unicode: "", mod: mod }];
         case 37:
-            return [keyPGConstant, { key: PygameLib.constants.K_LEFT }];
+            return [keyPGConstant, { key: PygameLib.constants.K_LEFT, unicode: "", mod: mod }];
         case 38:
-            return [keyPGConstant, { key: PygameLib.constants.K_UP }];
+            return [keyPGConstant, { key: PygameLib.constants.K_UP, unicode: "", mod: mod }];
         case 39:
-            return [keyPGConstant, { key: PygameLib.constants.K_RIGHT }];
+            return [keyPGConstant, { key: PygameLib.constants.K_RIGHT, unicode: "", mod: mod }];
         case 40:
-            return [keyPGConstant, { key: PygameLib.constants.K_DOWN }];
+            return [keyPGConstant, { key: PygameLib.constants.K_DOWN, unicode: "", mod: mod }];
         default:
             var difference = 0;
             if ((event.which <= 90) && (event.which >= 65))
                 difference = 32;
-            return [keyPGConstant, { key: (event.which + difference)}];
+            return [keyPGConstant, { key: (event.which + difference), unicode: event.key, mod: mod}];
     }
 };
 
@@ -128,6 +146,8 @@ PygameLib.constants = {
     'AUDIO_U16MSB': 4112,
     'AUDIO_U16SYS': 16,
     'AUDIO_U8': 8,
+    'AUDIODEVICEADDED': 4352,
+    'AUDIODEVICEREMOVED': 4353,
     'BIG_ENDIAN': 4321,
     'BLEND_ADD': 1,
     'BLEND_MAX': 5,
@@ -148,6 +168,9 @@ PygameLib.constants = {
     'BUTTON_X1': 6,
     'BUTTON_X2': 7,
     'DOUBLEBUF': 1073741824,
+    'FINGERMOTION': 1794,
+    'FINGERDOWN': 1792,
+    'FINGERUP': 1793,
     'FULLSCREEN': -2147483648,
     'GL_ACCELERATED_VISUAL': 15,
     'GL_ACCUM_ALPHA_SIZE': 11,
@@ -343,6 +366,9 @@ PygameLib.constants = {
     'MOUSEBUTTONDOWN': 5,
     'MOUSEBUTTONUP': 6,
     'MOUSEMOTION': 4,
+    'MOUSEWHEEL': 1027,
+    'MULTIGESTURE': 2050,
+
     'NOEVENT': 0,
     'NOFRAME': 32,
     'NUMEVENTS': 32,
@@ -363,6 +389,8 @@ PygameLib.constants = {
     'SRCCOLORKEY': 4096,
     'SWSURFACE': 0,
     'SYSWMEVENT': 13,
+    'TEXTEDITING': 770,
+    'TEXTINPUT': 771,
     'TIMER_RESOLUTION': 10,
     'USEREVENT': 24,
     'USEREVENT_DROPFILE': 4096,
@@ -371,7 +399,8 @@ PygameLib.constants = {
     'VIDEORESIZE': 16,
     'YUY2_OVERLAY': 844715353,
     'YV12_OVERLAY': 842094169,
-    'YVYU_OVERLAY': 1431918169
+    'YVYU_OVERLAY': 1431918169,
+
 }
 
 PygameLib.Colors = {
@@ -1049,6 +1078,10 @@ var $builtinmodule = function (name) {
     PygameLib.RectType = mod.Rect;
     mod.quit = new Sk.builtin.func(function () {
         PygameLib.running = false;
+        pygameCleanup(Sk.pygameData.mainSurface,{
+            mouse: mouseEventListener,
+            key: keyEventListener
+        });
         if (Sk.quitHandler) {
             Sk.quitHandler();
         }
@@ -1172,34 +1205,78 @@ var mouseEventListener = function (event) {
     PygameLib.eventQueue.unshift(e);
 };
 
-var pygameCleanup = function $cleanup(self) {
-    self.main_canvas.removeEventListener('mousedown', mouseEventListener);
-    self.main_canvas.removeEventListener('mouseup', mouseEventListener);
-    self.main_canvas.removeEventListener('mousemove', mouseEventListener);
-    window.removeEventListener("keydown", keyEventListener);
-    window.removeEventListener("keyup", keyEventListener);
+var exitEventListener = function(event) {
+    if (PygameLib.eventQueue) {
+        var e = [PygameLib.constants.QUIT];
+        PygameLib.eventQueue.unshift(e);
+    }
+}
+
+var pygameCleanup = function $cleanup(self, listeners) {
+    if (self) {
+        self.main_canvas.removeEventListener('mousedown', listeners.mouse);
+        self.main_canvas.removeEventListener('mouseup', listeners.mouse);
+        self.main_canvas.removeEventListener('mousemove', listeners.mouse);
+        self.exitButton.disabled = true;
+        self.exitButton.style.backgroundColor = 'gray';
+        self.exitButton.style.borderColor = 'darkgray';
+    }
+    window.removeEventListener("keydown", listeners.key);
+    window.removeEventListener("keyup", listeners.key);
     PygameLib.running = false;
 }
 
+// First two are unused from pygame
+const FLAG_FULLSCREEN = 0x100;
+const FLAG_MAIN = 0x1000;
+
 // Surface((width, height))
-var init$1 = function $__init__123$(self, size, fullscreen = false, main = true) {
+var GLOBAL_SURFACE_IDS = 0;
+var init$1 = function $__init__123$(self, size, flags, depth, masks) {
     Sk.builtin.pyCheckArgs('__init__', arguments, 2, 5, false, false);
     var tuple_js = Sk.ffi.remapToJs(size);
+    self._id = GLOBAL_SURFACE_IDS;
+    GLOBAL_SURFACE_IDS += 1;
     self.width = Math.round(tuple_js[0]);
     self.height = Math.round(tuple_js[1]);
+
+    flags = Sk.ffi.remapToJs(flags);
+    const main = (flags & FLAG_MAIN) === FLAG_MAIN;
+    const fullscreen = (flags & FLAG_FULLSCREEN) === FLAG_FULLSCREEN;
 
     if (!main) {
         self.main_canvas = document.createElement("canvas");
     } else {
         let consoleLine = Sk.console.pygame(size, fullscreen, self);
         self.main_canvas = consoleLine.canvas;
+        Sk.pygameData.mainSurface = self;
         if (!consoleLine.initialized) {
+            self.title = document.createElement("div");
+            self.title.classList.add("pygame-title-bar");
+            // Need to add 2 pixels for 1-pixel border
+            self.title.style.width = (2+self.width)+"px";
+            // Exit button
+            self.exitButton = document.createElement("button");
+            self.exitButton.innerHTML = "&times;";
+            self.exitButton.classList.add("pygame-title-exit");
+            self.exitButton.addEventListener('click', exitEventListener);
+            // Title
+            self.title.appendChild(self.exitButton);
+            self.titleText = document.createElement("span");
+            self.titleText.innerText = PygameLib.caption;
+            Sk.title_container = self.titleText;
+            self.title.appendChild(self.titleText);
+            consoleLine.html.prepend(self.title);
             self.main_canvas.addEventListener('mousedown', mouseEventListener);
             self.main_canvas.addEventListener('mouseup', mouseEventListener);
             self.main_canvas.addEventListener('mousemove', mouseEventListener);
             window.addEventListener("keydown", keyEventListener);
             window.addEventListener("keyup", keyEventListener);
-            consoleLine.finalize(pygameCleanup)
+            consoleLine.finalize(pygameCleanup, {
+                mouse: mouseEventListener,
+                key: keyEventListener
+            })
+            PygameLib.StopPygame = exitEventListener;
         }
 
         // TODO: Add in title bar, with exit/stop button
@@ -1235,9 +1312,17 @@ var init$1 = function $__init__123$(self, size, fullscreen = false, main = true)
     self.offscreen_canvas.height = self.height;
     self.main_canvas.setAttribute('width', self.width);
     self.main_canvas.setAttribute('height', self.height);
-    self.main_canvas.setAttribute('style', "border: 1px solid darkgray;");
-    fillBlack(self.main_context, self.main_canvas.width, self.main_canvas.height);
-    fillBlack(self.context2d, self.width, self.height);
+
+
+    if (main) {
+        self.main_canvas.setAttribute('style', "border: 1px solid darkgray;");
+        fillWhite(self.main_context, self.main_canvas.width, self.main_canvas.height);
+        fillWhite(self.context2d, self.width, self.height);
+    } else {
+        fillBlack(self.main_context, self.main_canvas.width, self.main_canvas.height);
+        fillBlack(self.context2d, self.width, self.height);
+    }
+
     return Sk.builtin.none.none$;
 
 };
@@ -1245,7 +1330,14 @@ var init$1 = function $__init__123$(self, size, fullscreen = false, main = true)
 function fillBlack(ctx, w, h) {
     ctx.beginPath();
     ctx.rect(0, 0, w - 1, h - 1);
-    ctx.fillStyle = "rgba(0, 0, 0, 0.0)";
+    ctx.fillStyle = "rgba(255, 255, 255, 0.0)";
+    ctx.fill();
+}
+
+function fillWhite(ctx, w, h) {
+    ctx.beginPath();
+    ctx.rect(0, 0, w - 1, h - 1);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.0)";
     ctx.fill();
 }
 
@@ -1264,7 +1356,8 @@ repr$1.co_varnames = ['self'];
 
 function get_height(self) {
     Sk.builtin.pyCheckArgs('get_height', arguments, 1, 1, false, false);
-    return Sk.ffi.remapToPy(self.height);
+    //return Sk.ffi.remapToPy(self.height);
+    return new Sk.builtin.int_(self.height);
 }
 
 get_height.co_name = new Sk.builtins['str']('get_height');
@@ -1272,7 +1365,8 @@ get_height.co_varnames = ['self'];
 
 function get_width(self) {
     Sk.builtin.pyCheckArgs('get_width', arguments, 1, 1, false, false);
-    return Sk.ffi.remapToPy(self.width);
+    //return Sk.ffi.remapToPy(self.width);
+    return new Sk.builtin.int_(self.width);
 }
 
 get_width.co_name = new Sk.builtins['str']('get_width');
@@ -1280,7 +1374,8 @@ get_width.co_varnames = ['self'];
 
 function get_size(self) {
     Sk.builtin.pyCheckArgs('get_size', arguments, 1, 1, false, false);
-    return new Sk.builtin.tuple([self.width, self.height]);
+    return new Sk.builtin.tuple([new Sk.builtin.int_(self.width),
+        new Sk.builtin.int_(self.height)]);
 }
 
 get_size.co_name = new Sk.builtins['str']('get_size');
@@ -1294,20 +1389,39 @@ function get_flags() {
 get_flags.co_name = new Sk.builtins['str']('get_flags');
 get_flags.co_varnames = ['self'];
 
-function update(self) {
-    self.main_canvas.width = self.offscreen_canvas.width;
-    self.main_canvas.height = self.offscreen_canvas.height;
-    self.main_context.drawImage(self.offscreen_canvas, 0, 0);
+function update(self, rectangle) {
+    // rectangle could be list, single, or missing
+    //self.main_canvas.width = self.offscreen_canvas.width;
+    //self.main_canvas.height = self.offscreen_canvas.height;
+    if (rectangle === undefined) {
+        self.main_context.drawImage(self.offscreen_canvas, 0, 0);
+        return Sk.builtin.none.none$;
+    } else if (Sk.misceval.isTrue(Sk.builtin.isinstance(rectangle, PygameLib.RectType))) {
+        rectangle = new Sk.builtin.list([rectangle]);
+    }
+    // TODO: Make this access the list correctly
+    for (let i=0, l= rectangle.v.length; i < l; i+=1) {
+        // TODO: Profile this, optimizable hot loop?
+        let left = Sk.builtin.getattr(rectangle.v[i], LEFT_STR).v;
+        let top = Sk.builtin.getattr(rectangle.v[i], TOP_STR).v;
+        let width = Sk.builtin.getattr(rectangle.v[i], WIDTH_STR).v;
+        let height = Sk.builtin.getattr(rectangle.v[i], HEIGHT_STR).v;
+        self.main_context.drawImage(self.offscreen_canvas,
+            left, top, width, height, left, top, width, height);
+    }
+    return Sk.builtin.none.none$;
 }
 
 update.co_name = new Sk.builtins['str']('update');
-update.co_varnames = ['self'];
+update.co_varnames = ['self', 'rectangle'];
 
-function blit(self, other, pos) {
-    var target_pos_js = Sk.ffi.remapToJs(pos);
-    self.context2d.drawImage(other.offscreen_canvas, target_pos_js[0], target_pos_js[1]);
-    return Sk.misceval.callsim(PygameLib.RectType,
-        new Sk.builtin.tuple([0, 0]), new Sk.builtin.tuple([other.offscreen_canvas.width, other.offscreen_canvas.height]))
+function blit(self, source, dest, area, flags) {
+    var x = Sk.ffi.remapToJs(Sk.abstr.objectGetItem(dest, new Sk.builtin.int_(0)));
+    var y = Sk.ffi.remapToJs(Sk.abstr.objectGetItem(dest, new Sk.builtin.int_(1)));
+    if (source.offscreen_canvas.width > 0 && source.offscreen_canvas.height > 0) {
+        self.context2d.drawImage(source.offscreen_canvas, x, y);
+    }
+    return PygameLib.make_rect(x, y, source.offscreen_canvas.width, source.offscreen_canvas.height);
 }
 
 function convert(self) {
@@ -1331,6 +1445,9 @@ var surface$1 = function $Surface$class_outer(gbl, loc) {
     loc.get_height = new Sk.builtins.function(get_height, gbl);
     loc.get_size = new Sk.builtins.function(get_size, gbl);
     loc.get_flags = new Sk.builtins.function(get_flags, gbl);
+    loc.set_alpha = new Sk.builtins.function(function (self) {
+        // TODO: Finish support for changing alpha of all pixels
+    }, gbl);
     loc.copy = new Sk.builtin.func(function (self) {
         var size = new Sk.builtin.tuple([self.offscreen_canvas.width, self.offscreen_canvas.width]);
         var ret = Sk.misceval.callsim(PygameLib.SurfaceType, size);
@@ -1339,6 +1456,21 @@ var surface$1 = function $Surface$class_outer(gbl, loc) {
         ret.context2d.drawImage(self.offscreen_canvas, 0, 0);
         return ret;
     });
+    loc.subsurface = new Sk.builtins.function(function (self, area) {
+        // TODO: Implement this properly so it's a reference inside of something else?
+        // TODO: Further need to make sure that we are actually accessing using getitem or index whatever
+        var x = Sk.ffi.remapToJs(Sk.abstr.objectGetItem(area, new Sk.builtin.int_(0)));
+        var y = Sk.ffi.remapToJs(Sk.abstr.objectGetItem(area, new Sk.builtin.int_(1)));
+        var w = Sk.ffi.remapToJs(Sk.abstr.objectGetItem(area, new Sk.builtin.int_(2)));
+        var h = Sk.ffi.remapToJs(Sk.abstr.objectGetItem(area, new Sk.builtin.int_(3)));
+        var size = new Sk.builtin.tuple([w, h]);
+        var ret = Sk.misceval.callsim(PygameLib.SurfaceType, size);
+        //fillWhite(ret.context2d, w, h);
+        ret.offscreen_canvas.width = w;
+        ret.offscreen_canvas.height = h;
+        ret.context2d.drawImage(self.offscreen_canvas, x, y, w, h, 0, 0, w, h);
+        return ret;
+    }, gbl);
     loc.scroll = new Sk.builtin.func(function (self, dx, dy) {
         var x = Sk.ffi.remapToJs(dx);
         var y = Sk.ffi.remapToJs(dy);
@@ -1352,7 +1484,7 @@ var surface$1 = function $Surface$class_outer(gbl, loc) {
         var x = Sk.ffi.remapToJs(coordinates.v[0]);
         var y = Sk.ffi.remapToJs(coordinates.v[1]);
         var data = self.context2d.getImageData(x, y, 1, 1).data;
-        return Sk.builtin.tuple([data[0], data[1], data[2], data[3]]);
+        return new Sk.builtin.tuple([data[0], data[1], data[2], data[3]]);
     });
     loc.set_at = new Sk.builtin.func(function (self, coordinates, clr) {
         if (Sk.abstr.typeName(coordinates) !== "tuple") {
@@ -1362,18 +1494,16 @@ var surface$1 = function $Surface$class_outer(gbl, loc) {
             throw new Sk.builtin.TypeError("the second argument must be a Pygame color");
         }
         var rgba = PygameLib.extract_color(clr);
-        self.context2d.fillStyle = "rgba(" + rgba[0] + "," + rgba[1] + "," + rgba[2] + "," + (rgba[3] / 255) + ")";
+        self.context2d.fillStyle = "rgba(" + rgba[0] + "," + rgba[1] + "," + rgba[2] + "," + (rgba[3]) + ")";
         var x = Sk.ffi.remapToJs(coordinates.v[0]);
         var y = Sk.ffi.remapToJs(coordinates.v[1]);
         self.context2d.fillRect(x, y, 1, 1);
     });
     loc.get_rect = new Sk.builtin.func(function (self) {
-        return Sk.misceval.callsim(PygameLib.RectType,
-            Sk.builtin.tuple([0, 0]), Sk.builtin.tuple([self.offscreen_canvas.width, self.offscreen_canvas.height]))
+        return PygameLib.make_rect(0, 0, self.offscreen_canvas.width, self.offscreen_canvas.height);
     });
     loc.get_bounding_rect = new Sk.builtin.func(function (self) {
-        return Sk.misceval.callsim(PygameLib.RectType,
-            Sk.builtin.tuple([0, 0]), Sk.builtin.tuple([self.offscreen_canvas.width, self.offscreen_canvas.height]))
+        return PygameLib.make_rect(0, 0, self.offscreen_canvas.width, self.offscreen_canvas.height);
     })
 };
 
@@ -1416,7 +1546,7 @@ function color_type_f($gbl, $loc) {
         var r = Sk.ffi.remapToJs(Sk.abstr.gattr(self, R_STR, false));
         var g = Sk.ffi.remapToJs(Sk.abstr.gattr(self, G_STR, false));
         var b = Sk.ffi.remapToJs(Sk.abstr.gattr(self, B_STR, false));
-        return Sk.builtin.tuple([1.0 - r / 255, 1.0 - g / 255, 1.0 - b / 255]);
+        return new Sk.builtin.tuple([1.0 - r / 255, 1.0 - g / 255, 1.0 - b / 255]);
     });
     var cmy_setter = new Sk.builtin.func(function (self, val) {
         var cmy = Sk.ffi.remapToJs(val);
@@ -1637,638 +1767,3 @@ function color_type_f($gbl, $loc) {
     })
 };
 
-//pygame.Rect
-function rect_type_f($gbl, $loc) {
-    //Rect(Surface, color, Rect, width=0) -> Rect
-    //Rect((left, top), (width, height)) -> Rect
-    $loc.__init__ = new Sk.builtin.func(function (self, a, b, c, d) {
-        Sk.builtin.pyCheckArgs('__init__', arguments, 3, 5, false, false);
-        if (Sk.abstr.typeName(a) === "tuple" && Sk.abstr.typeName(b) === "tuple") {
-            if (c !== undefined || d !== undefined) {
-                throw new Sk.builtin.RuntimeError("Expected 2 tuples or 4 ints as input");
-            }
-            var a_js = Sk.ffi.remapToJs(a);
-            var b_js = Sk.ffi.remapToJs(b);
-            Sk.abstr.sattr(self, LEFT_STR, Sk.ffi.remapToPy(a_js[0]), false);
-            Sk.abstr.sattr(self, TOP_STR, Sk.ffi.remapToPy(a_js[1]), false);
-            Sk.abstr.sattr(self, WIDTH_STR, Sk.ffi.remapToPy(b_js[0]), false);
-            Sk.abstr.sattr(self, HEIGHT_STR, Sk.ffi.remapToPy(b_js[1]), false);
-        } else if ((Sk.abstr.typeName(a) === "int" || Sk.abstr.typeName(a) === "float") &&
-            (Sk.abstr.typeName(b) === "int" || Sk.abstr.typeName(b) === "float") &&
-            (Sk.abstr.typeName(c) === "int" || Sk.abstr.typeName(c) === "float") &&
-            (Sk.abstr.typeName(d) === "int" || Sk.abstr.typeName(d) === "float")) {
-            Sk.abstr.sattr(self, LEFT_STR, a, false);
-            Sk.abstr.sattr(self, TOP_STR, b, false);
-            Sk.abstr.sattr(self, WIDTH_STR, c, false);
-            Sk.abstr.sattr(self, HEIGHT_STR, d, false);
-        }
-        return Sk.builtin.none.none$;
-    });
-    $loc.__init__.co_name = new Sk.builtins['str']('__init__');
-    $loc.__init__.co_varnames = ['self', 'left', 'top', 'width', 'heght'];
-
-    $loc.__repr__ = new Sk.builtin.func(function (self) {
-        var left = Sk.ffi.remapToJs(Sk.abstr.gattr(self, LEFT_STR, false));
-        var top = Sk.ffi.remapToJs(Sk.abstr.gattr(self, TOP_STR, false));
-        var width = Sk.ffi.remapToJs(Sk.abstr.gattr(self, WIDTH_STR, false));
-        var height = Sk.ffi.remapToJs(Sk.abstr.gattr(self, HEIGHT_STR, false));
-        return Sk.ffi.remapToPy('<Rect(' + left + ', ' + top + ', ' + width + ', ' + height + ')>');
-    });
-    $loc.__repr__.co_name = new Sk.builtins['str']('__repr__');
-    $loc.__repr__.co_varnames = ['self'];
-
-    $loc.copy = new Sk.builtin.func(function (self) {
-        var left = Sk.ffi.remapToJs(Sk.abstr.gattr(self, LEFT_STR, false));
-        var top = Sk.ffi.remapToJs(Sk.abstr.gattr(self, TOP_STR, false));
-        var width = Sk.ffi.remapToJs(Sk.abstr.gattr(self, WIDTH_STR, false));
-        var height = Sk.ffi.remapToJs(Sk.abstr.gattr(self, HEIGHT_STR, false));
-        return Sk.misceval.callsim(PygameLib.RectType,
-            new Sk.builtin.tuple([left, top]), new Sk.builtin.tuple([width, height]))
-    }, $gbl);
-    // https://github.com/pygame/pygame/blob/master/src_c/rect.c
-    var x_getter = new Sk.builtin.func(function (self) {
-        return Sk.abstr.gattr(self, LEFT_STR, false);
-    });
-    var x_setter = new Sk.builtin.func(function (self, val) {
-        Sk.abstr.sattr(self, LEFT_STR, val, false);
-    });
-    $loc.x = Sk.misceval.callsimOrSuspend(Sk.builtins.property, x_getter, x_setter);
-
-    var y_getter = new Sk.builtin.func(function (self) {
-        return Sk.abstr.gattr(self, TOP_STR, false);
-    });
-    var y_setter = new Sk.builtin.func(function (self, val) {
-        Sk.abstr.sattr(self, TOP_STR, val, false);
-    });
-    $loc.y = Sk.misceval.callsimOrSuspend(Sk.builtins.property, y_getter, y_setter);
-
-    function get_top(self) {
-        return Sk.ffi.remapToJs(Sk.abstr.gattr(self, TOP_STR, false));
-    }
-
-    function get_height(self) {
-        return Sk.ffi.remapToJs(Sk.abstr.gattr(self, HEIGHT_STR, false));
-    }
-
-    function get_bottom(self) {
-        return get_top(self) + get_height(self);
-    }
-
-    function get_left(self) {
-        return Sk.ffi.remapToJs(Sk.abstr.gattr(self, LEFT_STR, false));
-    }
-
-    function get_width(self) {
-        return Sk.ffi.remapToJs(Sk.abstr.gattr(self, WIDTH_STR, false));
-    }
-
-    function get_right(self) {
-        return get_left(self) + get_width(self);
-    }
-
-    function get_centerx(self) {
-        return get_left(self) + Math.floor(get_width(self) / 2);
-    }
-
-    function get_centery(self) {
-        return get_top(self) + Math.floor(get_height(self) / 2);
-    }
-
-    function set_top(self, t) {
-        Sk.abstr.sattr(self, TOP_STR, Sk.ffi.remapToPy(t), false);
-    }
-
-    function set_height(self, h) {
-        Sk.abstr.sattr(self, HEIGHT_STR, Sk.ffi.remapToPy(h), false);
-    }
-
-    function set_bottom(self, b) {
-        set_top(self, b - get_height(self));
-    }
-
-    function set_left(self, l) {
-        Sk.abstr.sattr(self, LEFT_STR, Sk.ffi.remapToPy(l), false);
-    }
-
-    function set_width(self, w) {
-        Sk.abstr.sattr(self, WIDTH_STR, Sk.ffi.remapToPy(w), false);
-    }
-
-    function set_right(self, r) {
-        set_left(self, r - get_width(self));
-    }
-
-    function set_centerx(self, cx) {
-        set_left(self, cx - Math.floor(get_width(self) / 2));
-    }
-
-    function set_centery(self, cy) {
-        set_top(self, cy - Math.floor(get_height(self) / 2));
-    }
-
-    var bottom_getter = new Sk.builtin.func(function (self) {
-        return Sk.ffi.remapToPy(get_bottom(self));
-    });
-    var bottom_setter = new Sk.builtin.func(function (self, val) {
-        set_bottom(self, Sk.ffi.remapToJs(val));
-    });
-    $loc.bottom = Sk.misceval.callsimOrSuspend(Sk.builtins.property, bottom_getter, bottom_setter);
-
-    var right_getter = new Sk.builtin.func(function (self) {
-        return Sk.ffi.remapToPy(get_right(self));
-    });
-    var right_setter = new Sk.builtin.func(function (self, val) {
-        set_right(self, Sk.ffi.remapToJs(val));
-    });
-    $loc.right = Sk.misceval.callsimOrSuspend(Sk.builtins.property, right_getter, right_setter);
-
-    var topleft_getter = new Sk.builtin.func(function (self) {
-
-        return new Sk.builtin.tuple([get_top(self), get_left(self)]);
-    });
-    var topleft_setter = new Sk.builtin.func(function (self, val) {
-        var tl = Sk.ffi.remapToJs(val);
-        set_top(self, tl[0]);
-        set_left(self, tl[1]);
-    });
-    $loc.topleft = Sk.misceval.callsimOrSuspend(Sk.builtins.property, topleft_getter, topleft_setter);
-
-    var bottomleft_getter = new Sk.builtin.func(function (self) {
-        return new Sk.builtin.tuple([Sk.ffi.remapToPy(get_bottom(self)), Sk.ffi.remapToPy(get_left(self))]);
-    });
-    var bottomleft_setter = new Sk.builtin.func(function (self, val) {
-        var bl = Sk.ffi.remapToJs(val);
-        set_bottom(self, bl[0]);
-        set_left(self, bl[1]);
-    });
-    $loc.bottomleft = Sk.misceval.callsimOrSuspend(Sk.builtins.property, bottomleft_getter, bottomleft_setter);
-
-    var topright_getter = new Sk.builtin.func(function (self) {
-        return new Sk.builtin.tuple([get_top(self), get_right(self)]);
-    });
-    var topright_setter = new Sk.builtin.func(function (self, val) {
-        var tr = Sk.ffi.remapToJs(val);
-        set_top(self, tr[0]);
-        set_right(self, tr[1]);
-    });
-    $loc.topright = Sk.misceval.callsimOrSuspend(Sk.builtins.property, topright_getter, topright_setter);
-
-    var bottomright_getter = new Sk.builtin.func(function (self) {
-        return new Sk.builtin.tuple([Sk.ffi.remapToPy(get_bottom(self)), Sk.ffi.remapToPy(get_right(self))]);
-    });
-    var bottomright_setter = new Sk.builtin.func(function (self, val) {
-        var br = Sk.ffi.remapToJs(val);
-        set_bottom(self, br[0]);
-        set_right(self, br[1]);
-    });
-    $loc.bottomright = Sk.misceval.callsimOrSuspend(Sk.builtins.property, bottomright_getter, bottomright_setter);
-
-    var midtop_getter = new Sk.builtin.func(function (self) {
-        return new Sk.builtin.tuple([get_left(self) + Math.floor(get_width(self) / 2), get_top(self)]);
-    });
-    var midtop_setter = new Sk.builtin.func(function (self, val) {
-        var mt = Sk.ffi.remapToJs(val);
-        set_left(self, mt[0] - Math.floor(get_width(self) / 2));
-        set_top(self, mt[1]);
-    });
-    $loc.midtop = Sk.misceval.callsimOrSuspend(Sk.builtins.property, midtop_getter, midtop_setter);
-
-    var midbottom_getter = new Sk.builtin.func(function (self) {
-        return new Sk.builtin.tuple([get_centerx(self), get_bottom(self)])
-    });
-    var midbottom_setter = new Sk.builtin.func(function (self, val) {
-        var mb = Sk.ffi.remapToJs(val);
-        set_centerx(self, mb[0]);
-        set_bottom(self, mb[1]);
-    });
-    $loc.midbottom = Sk.misceval.callsimOrSuspend(Sk.builtins.property, midbottom_getter, midbottom_setter);
-
-    var midleft_getter = new Sk.builtin.func(function (self) {
-        return new Sk.builtin.tuple([get_left(self), get_centery(self)]);
-    });
-    var midleft_setter = new Sk.builtin.func(function (self, val) {
-        var lm = Sk.ffi.remapToJs(val);
-        set_left(self, lm[0]);
-        set_centery(self, lm[1]);
-    });
-    $loc.midleft = Sk.misceval.callsimOrSuspend(Sk.builtins.property, midleft_getter, midleft_setter);
-
-    var midright_getter = new Sk.builtin.func(function (self) {
-        return new Sk.builtin.tuple([get_right(self), get_centery(self)]);
-    });
-    var midright_setter = new Sk.builtin.func(function (self, val) {
-        var rm = Sk.ffi.remapToJs(val);
-        set_right(self, rm[0]);
-        set_centery(self, rm[1]);
-    });
-    $loc.midright = Sk.misceval.callsimOrSuspend(Sk.builtins.property, midright_getter, midright_setter);
-
-    var center_getter = new Sk.builtin.func(function (self) {
-        return new Sk.builtin.tuple([get_centerx(self), get_centery(self)]);
-    });
-    var center_setter = new Sk.builtin.func(function (self, val) {
-        var c = Sk.ffi.remapToJs(val);
-        set_centerx(self, c[0]);
-        set_centery(self, c[1]);
-    });
-    $loc.center = Sk.misceval.callsimOrSuspend(Sk.builtins.property, center_getter, center_setter);
-
-    var centerx_getter = new Sk.builtin.func(function (self) {
-        return Sk.ffi.remapToPy(get_centerx(self));
-    });
-    var centerx_setter = new Sk.builtin.func(function (self, val) {
-        set_centerx(self, Sk.ffi.remapToJs(val));
-    });
-    $loc.centerx = Sk.misceval.callsimOrSuspend(Sk.builtins.property, centerx_getter, centerx_setter);
-
-    var centery_getter = new Sk.builtin.func(function (self) {
-        return Sk.ffi.remapToPy(get_centery(self));
-    });
-    var centery_setter = new Sk.builtin.func(function (self) {
-        set_centery(self, Sk.ffi.remapToPy(val));
-    });
-    $loc.centery = Sk.misceval.callsimOrSuspend(Sk.builtins.property, centery_getter, centery_setter);
-
-    var size_getter = new Sk.builtin.func(function (self) {
-        return new Sk.builtin.tuple([get_width(self), get_height(self)]);
-    });
-    var size_setter = new Sk.builtin.func(function (self, val) {
-        var s = Sk.ffi.remapToJs(val);
-        set_width(self, s[0]);
-        set_height(self, s[1]);
-    });
-    $loc.size = Sk.misceval.callsimOrSuspend(Sk.builtins.property, size_getter, size_setter);
-
-    var w_getter = new Sk.builtin.func(function (self) {
-        return Sk.ffi.remapToPy(get_width(self));
-    });
-    var w_setter = new Sk.builtin.func(function (self, val) {
-        set_width(self, Sk.ffi.remapToJs(val));
-    });
-    $loc.w = Sk.misceval.callsimOrSuspend(Sk.builtins.property, w_getter, w_setter);
-
-    var h_getter = new Sk.builtin.func(function (self) {
-        return Sk.ffi.remapToPy(get_height(self));
-    });
-    var h_setter = new Sk.builtin.func(function (self, val) {
-        set_height(self, Sk.ffi.remapToJs(val));
-    });
-    $loc.h = Sk.misceval.callsimOrSuspend(Sk.builtins.property, h_getter, h_setter);
-
-    $loc.move = new Sk.builtin.func(function (self, x, y) {
-        var newLeft = get_left(self) + Sk.ffi.remapToJs(x);
-        var newTop = get_top(self) + Sk.ffi.remapToJs(y);
-        return Sk.misceval.callsim(PygameLib.RectType,
-            new Sk.builtin.tuple([newLeft, newTop]), new Sk.builtin.tuple([get_width(self), get_height(self)]))
-    });
-    $loc.move_ip = new Sk.builtin.func(function (self, x, y) {
-        set_left(self, get_left(self) + Sk.ffi.remapToJs(x));
-        set_top(self, get_top(self) + Sk.ffi.remapToJs(y));
-        return Sk.builtin.none.none$;
-    });
-    $loc.inflate = new Sk.builtin.func(function (self, x, y) {
-        x = Sk.ffi.remapToJs(x);
-        y = Sk.ffi.remapToJs(y);
-        var newLeft = get_left(self) - Math.floor(x / 2);
-        var newTop = get_top(self) - Math.floor(y / 2);
-        return Sk.misceval.callsim(PygameLib.RectType,
-            new Sk.builtin.tuple([newLeft, newTop]), new Sk.builtin.tuple([get_width(self) + x, get_height(self) + y]));
-    });
-    $loc.inflate_ip = new Sk.builtin.func(function (self, x, y) {
-        x = Sk.ffi.remapToJs(x);
-        y = Sk.ffi.remapToJs(y);
-        var newLeft = get_left(self) - Math.floor(x / 2);
-        var newTop = get_top(self) - Math.floor(y / 2);
-        set_left(self, newLeft);
-        set_top(self, newTop);
-        set_width(self, get_width(self) + x);
-        set_height(self, get_height(self) + y);
-    });
-    $loc.clamp = new Sk.builtin.func(function (self, argrect) {
-        var argx = get_left(argrect);
-        var argy = get_top(argrect);
-        var argw = get_width(argrect);
-        var argh = get_height(argrect);
-        var selfx = get_left(self);
-        var selfy = get_top(self);
-        var selfw = get_width(self);
-        var selfh = get_height(self);
-        var x, y;
-        if (selfw >= argw) {
-            x = argx + argw / 2 - selfw / 2;
-        }
-        else if (selfx < argx) {
-
-            x = argx;
-        }
-        else if (selfx + selfw > argx + argw) {
-            x = argx + argw - selfw;
-        }
-        else {
-            x = selfx;
-        }
-
-        if (selfh >= argh) {
-            y = argy + argh / 2 - selfh / 2;
-        }
-        else if (selfy < argy) {
-            y = argy;
-        }
-        else if (selfy + selfh > argy + argh) {
-            y = argy + argh - selfh;
-        }
-        else {
-            y = selfy;
-        }
-        return Sk.misceval.callsim(PygameLib.RectType,
-            new Sk.builtin.tuple([x, y]), new Sk.builtin.tuple([selfw, selfh]));
-    });
-    $loc.clamp_ip = new Sk.builtin.func(function (self, argrect) {
-        var argx = get_left(argrect);
-        var argy = get_top(argrect);
-        var argw = get_width(argrect);
-        var argh = get_height(argrect);
-        var selfx = get_left(self);
-        var selfy = get_top(self);
-        var selfw = get_width(self);
-        var selfh = get_height(self);
-        var x, y;
-        if (selfw >= argw) {
-            x = argx + argw / 2 - selfw / 2;
-        }
-        else if (selfx < argx) {
-
-            x = argx;
-        }
-        else if (selfx + selfw > argx + argw) {
-            x = argx + argw - selfw;
-        }
-        else {
-            x = selfx;
-        }
-
-        if (selfh >= argh) {
-            y = argy + argh / 2 - selfh / 2;
-        }
-        else if (selfy < argy) {
-            y = argy;
-        }
-        else if (selfy + selfh > argy + argh) {
-            y = argy + argh - selfh;
-        }
-        else {
-            y = selfy;
-        }
-        set_left(self, x);
-        set_top(self, y);
-    });
-    $loc.clip = new Sk.builtin.func(function (self, argrect) {
-        if (Sk.abstr.typeName(argrect) !== "Rect") {
-            throw new Sk.builtin.TypeError("Argument must be rect style object");
-        }
-        var argx = get_left(argrect);
-        var argy = get_top(argrect);
-        var argw = get_width(argrect);
-        var argh = get_height(argrect);
-        var selfx = get_left(self);
-        var selfy = get_top(self);
-        var selfw = get_width(self);
-        var selfh = get_height(self);
-        var x, y, w, h;
-        /* Left */
-        if ((selfx >= argx) && (selfx < (argx + argw))) {
-            x = selfx;
-        }
-        else if ((argx >= selfx) && (argx < (selfx + selfw))) {
-            x = argx;
-        }
-        else {
-            return Sk.misceval.callsim(PygameLib.RectType,
-                new Sk.builtin.tuple([selfx, selfy]), new Sk.builtin.tuple([0, 0]));
-        }
-        /* Right */
-        if (((selfx + selfw) > argx) && ((selfx + selfw) <= (argx + argw))) {
-            w = (selfx + selfw) - x;
-        }
-        else if (((argx + argw) > selfx) && ((argx + argw) <= (selfx + selfw))) {
-            w = (argx + argw) - x;
-        }
-        else {
-            return Sk.misceval.callsim(PygameLib.RectType,
-                new Sk.builtin.tuple([selfx, selfy]), new Sk.builtin.tuple([0, 0]));
-        }
-        /* Top */
-        if ((selfy >= argy) && (selfy < (argy + argh))) {
-            y = selfy;
-        } else if ((argy >= selfy) && (argy < (selfy + selfh))) {
-            y = argy;
-        } else {
-            return Sk.misceval.callsim(PygameLib.RectType,
-                new Sk.builtin.tuple([selfx, selfy]), new Sk.builtin.tuple([0, 0]));
-        }
-        /* Bottom */
-        if (((selfy + selfh) > argy) && ((selfy + selfh) <= (argy + argh))) {
-            h = (selfy + selfh) - y;
-        } else if (((argy + argh) > selfy) && ((argy + argh) <= (selfy + selfh))) {
-            h = (argy + argh) - y;
-        } else {
-            return Sk.misceval.callsim(PygameLib.RectType,
-                new Sk.builtin.tuple([selfx, selfy]), new Sk.builtin.tuple([0, 0]));
-        }
-        return Sk.misceval.callsim(PygameLib.RectType,
-            new Sk.builtin.tuple([x, y]), new Sk.builtin.tuple([w, h]));
-    });
-    $loc.union = new Sk.builtin.func(function (self, argrect) {
-        var argx = get_left(argrect);
-        var argy = get_top(argrect);
-        var argw = get_width(argrect);
-        var argh = get_height(argrect);
-        var selfx = get_left(self);
-        var selfy = get_top(self);
-        var selfw = get_width(self);
-        var selfh = get_height(self);
-        var x, y, w, h;
-        x = Math.min(argx, selfx);
-        y = Math.min(argy, selfy);
-        w = Math.max(selfx + selfw, argx + argw) - x;
-        h = Math.max(selfy + selfh, argy + argh) - y;
-        return Sk.misceval.callsim(PygameLib.RectType,
-            new Sk.builtin.tuple([x, y]), new Sk.builtin.tuple([w, h]));
-    });
-    $loc.union_ip = new Sk.builtin.func(function (self, argrect) {
-        var argx = get_left(argrect);
-        var argy = get_top(argrect);
-        var argw = get_width(argrect);
-        var argh = get_height(argrect);
-        var selfx = get_left(self);
-        var selfy = get_top(self);
-        var selfw = get_width(self);
-        var selfh = get_height(self);
-        var x, y, w, h;
-        x = Math.min(argx, selfx);
-        y = Math.min(argy, selfy);
-        w = Math.max(selfx + selfw, argx + argw) - x;
-        h = Math.max(selfy + selfh, argy + argh) - y;
-        set_left(self, x);
-        set_top(self, y);
-        set_width(self, w);
-        set_height(self, h);
-    });
-    $loc.unionall = new Sk.builtin.func(function (self, list) {
-        var l = get_left(self);
-        var t = get_top(self);
-        var r = l + get_width(self);
-        var b = t + get_height(self);
-        for (var i = 0; i < list.v.length; i++) {
-            l = Math.min(l, get_left(list.v[i]));
-            t = Math.min(t, get_top(list.v[i]));
-            r = Math.max(r, get_right(list.v[i]));
-            b = Math.max(b, get_bottom(list.v[i]));
-        }
-        return Sk.misceval.callsim(PygameLib.RectType,
-            new Sk.builtin.tuple([l, t]), new Sk.builtin.tuple([r - l, b - t]));
-    });
-    $loc.unionall_ip = new Sk.builtin.func(function (self, list) {
-        var l = get_left(self);
-        var t = get_top(self);
-        var r = l + get_width(self);
-        var b = t + get_height(self);
-        for (var i = 0; i < list.v.length; i++) {
-            l = Math.min(l, get_left(list.v[i]));
-            t = Math.min(t, get_top(list.v[i]));
-            r = Math.max(r, get_right(list.v[i]));
-            b = Math.max(b, get_bottom(list.v[i]));
-        }
-        set_left(self, l);
-        set_top(self, t);
-        set_width(self, r - l);
-        set_height(self, b - t);
-    });
-    $loc.fit = new Sk.builtin.func(function (self, argrect) {
-        var argx = get_left(argrect);
-        var argy = get_top(argrect);
-        var argw = get_width(argrect);
-        var argh = get_height(argrect);
-        var selfx = get_left(self);
-        var selfy = get_top(self);
-        var selfw = get_width(self);
-        var selfh = get_height(self);
-        var x, y, w, h;
-        var xratio, yratio, maxratio;
-        xratio = selfw / argw;
-        yratio = selfh / argh;
-        maxratio = (xratio > yratio) ? xratio : yratio;
-
-        w = Math.round(selfw / maxratio);
-        h = Math.round(selfh / maxratio);
-
-        x = argx + Math.floor((argw - w) / 2);
-        y = argy + Math.floor((argh - h) / 2);
-        return Sk.misceval.callsim(PygameLib.RectType,
-            new Sk.builtin.tuple([x, y]), new Sk.builtin.tuple([w, h]));
-    });
-    $loc.normalize = new Sk.builtin.func(function (self) {
-        var selfx = get_left(self);
-        var selfy = get_top(self);
-        var selfw = get_width(self);
-        var selfh = get_height(self);
-        if (selfw < 0) {
-            selfx += selfw;
-            selfw = -selfw;
-        }
-        if (selfh < 0) {
-            selfy += selfh;
-            selfh = -selfh;
-        }
-        set_left(self, selfx);
-        set_width(self, selfw);
-        set_top(self, selfy);
-        set_height(self, selfh);
-    });
-    $loc.contains = new Sk.builtin.func(function (self, argrect) {
-        var argx = get_left(argrect);
-        var argy = get_top(argrect);
-        var argw = get_width(argrect);
-        var argh = get_height(argrect);
-        var selfx = get_left(self);
-        var selfy = get_top(self);
-        var selfw = get_width(self);
-        var selfh = get_height(self);
-        var contained = (selfx <= argx) && (selfy <= argy) &&
-            (selfx + selfw >= argx + argw) &&
-            (selfy + selfh >= argy + argh) &&
-            (selfx + selfw > argx) &&
-            (selfy + selfh > argy);
-        return Sk.ffi.remapToPy(contained);
-    });
-    $loc.collidepoint = new Sk.builtin.func(function (self, x, y) {
-        if (Sk.abstr.typeName(x) === "tuple" && y === undefined) {
-            var xy = Sk.ffi.remapToJs(x);
-            x = xy[0];
-            y = xy[1];
-        } else if (Sk.abstr.typeName(x) === "int" && Sk.abstr.typeName(y) === "int") {
-            x = Sk.ffi.remapToJs(x);
-            y = Sk.ffi.remapToJs(y);
-        } else {
-            throw new Sk.builtin.TypeError("argument must contain two numbers");
-        }
-        var selfx = get_left(self);
-        var selfy = get_top(self);
-        var selfw = get_width(self);
-        var selfh = get_height(self);
-        var inside = x >= selfx && x < selfx + selfw &&
-            y >= selfy && y < selfy + selfh;
-        return Sk.ffi.remapToPy(inside);
-    });
-
-    function do_rects_intersect(self, argrect) {
-        var argx = get_left(argrect);
-        var argy = get_top(argrect);
-        var argw = get_width(argrect);
-        var argh = get_height(argrect);
-        var selfx = get_left(self);
-        var selfy = get_top(self);
-        var selfw = get_width(self);
-        var selfh = get_height(self);
-        return (selfx < argx + argw && selfy < argy + argh &&
-            selfx + selfw > argx && selfy + selfh > argy);
-    }
-
-    $loc.colliderect = new Sk.builtin.func(function (self, argrect) {
-        if (Sk.abstr.typeName(argrect) !== "Rect") {
-            throw new Sk.builtin.TypeError("Argument must be rect style object");
-        }
-        return Sk.ffi.remapToPy(do_rects_intersect(self, argrect))
-    });
-    $loc.collidelist = new Sk.builtin.func(function (self, list) {
-        if (Sk.abstr.typeName(list) !== "list") {
-            throw new Sk.builtin.TypeError("Argument must be a sequence of rectstyle objects.");
-        }
-        var ret = -1;
-        for (var i = 0; i < list.v.length; i++) {
-            if (Sk.abstr.typeName(list.v[i]) !== "Rect") {
-                throw new Sk.builtin.TypeError("Argument must be a sequence of rectstyle objects.");
-            }
-            if (do_rects_intersect(self, list.v[i])) {
-                ret = i;
-                break;
-            }
-        }
-        return Sk.ffi.remapToPy(ret);
-    });
-    $loc.collidelistall = new Sk.builtin.func(function (self, list) {
-        if (Sk.abstr.typeName(list) !== "list") {
-            throw new Sk.builtin.TypeError("Argument must be a sequence of rectstyle objects.");
-        }
-        var ret = [];
-        for (var i = 0; i < list.v.length; i++) {
-            if (Sk.abstr.typeName(list.v[i]) !== "Rect") {
-                throw new Sk.builtin.TypeError("Argument must be a sequence of rectstyle objects.");
-            }
-            if (do_rects_intersect(self, list.v[i])) {
-                ret.push(i);
-            }
-        }
-        return Sk.ffi.remapToPy(ret);
-    });
-};

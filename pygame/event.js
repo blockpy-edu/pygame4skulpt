@@ -43,7 +43,9 @@ var get_event = function (types) {
     var list = [];
     var t, d;
     var types_js = types ? Sk.ffi.remapToJs(types) : [];
-    var queue = types ? (Sk.abstr.typeName(types) == "list" ? PygameLib.eventQueue.filter(e => types_js.includes(e[0])) : PygameLib.eventQueue.filter(e => e[0] == types_js))
+    var queue = types ? (Sk.abstr.typeName(types) === "list" ?
+            PygameLib.eventQueue.filter(e => types_js.includes(e[0]))
+            : PygameLib.eventQueue.filter(e => e[0] === types_js))
         : PygameLib.eventQueue;
 
     for (var i = 0; i < queue.length; i++) {
@@ -72,7 +74,7 @@ function event_EventType_f($gbl, $loc) {
         Sk.abstr.sattr(self, new Sk.builtin.str('type'), type, false);
         dictjs = Sk.ffi.remapToJs(dict);
         for (k in dictjs) {
-            Sk.abstr.sattr(self, k, Sk.ffi.remapToPy(dictjs[k]), false);
+            Sk.abstr.sattr(self, new Sk.builtin.str(k), Sk.ffi.remapToPy(dictjs[k]), false);
         }
         return Sk.builtin.none.none$;
     });

@@ -1,3 +1,7 @@
+function skulptGetIndex(obj, index) {
+    return Sk.ffi.remapToJs(Sk.abstr.objectGetItem(obj, new Sk.builtin.int_(index)));
+}
+
 var $builtinmodule = function (name) {
     mod = {};
     mod.rect = new Sk.builtin.func(draw_rect);
@@ -19,8 +23,12 @@ var bbox = function (min_h, max_h, min_w, max_w) {
     var top = min_h;
     var left = min_w;
     t = new Sk.builtin.tuple([left, top]);
-    return Sk.misceval.callsim(PygameLib.RectType, new Sk.builtin.tuple([left, top]), new Sk.builtin.tuple([width, height]));
+    return PygameLib.make_rect(left, top, width, height);
 };
+
+function rgbaColorFromPygame(color_js) {
+    return 'rgba(' + color_js[0] + ', ' + color_js[1] + ', ' + color_js[2] + ', ' + color_js[3] + ')';
+}
 
 //pygame.draw.rect()
 //rect(Surface, color, Rect, width=0) -> Rect
@@ -28,23 +36,22 @@ var draw_rect = function (surface, color, rect, width = 0) {
     var ctx = surface.context2d;
     var color_js = PygameLib.extract_color(color);
     var width_js = Sk.ffi.remapToJs(width);
-    var rect_js = PygameLib.extract_rect(rect);
 
-    var left = rect_js[0];
-    var top = rect_js[1];
-    var width = rect_js[2];
-    var height = rect_js[3];
+    var left = skulptGetIndex(rect, 0);
+    var top = skulptGetIndex(rect, 1);
+    var w = skulptGetIndex(rect, 2);
+    var h = skulptGetIndex(rect, 3);
 
     if (width_js) {
         ctx.lineWidth = width_js;
-        ctx.strokeStyle = 'rgba(' + color_js[0] + ', ' + color_js[1] + ', ' + color_js[2] + ', ' + color_js[3] + ')';
-        ctx.strokeRect(left, top, width, height);
+        ctx.strokeStyle = rgbaColorFromPygame(color_js);
+        ctx.strokeRect(left, top, w, h);
     } else {
-        ctx.fillStyle = 'rgba(' + color_js[0] + ', ' + color_js[1] + ', ' + color_js[2] + ', ' + color_js[3] + ')';
-        ctx.fillRect(left, top, width, height);
+        ctx.fillStyle = rgbaColorFromPygame(color_js);
+        ctx.fillRect(left, top, w, h);
     }
 
-    return Sk.misceval.callsim(PygameLib.RectType, new Sk.builtin.tuple([left, top]), new Sk.builtin.tuple([width, height]));
+    return PygameLib.make_rect(left, top, w, h);
 };
 
 //pygame.draw.polygon()
@@ -58,21 +65,22 @@ var draw_polygon = function (surface, color, pointlist, width = 0) {
 var draw_circle = function (surface, color, pos, radius, width = 0) {
     var ctx = surface.context2d;
     var width_js = Sk.ffi.remapToJs(width);
-    var center = Sk.ffi.remapToJs(pos);
+    let x = skulptGetIndex(pos, 0);
+    let y = skulptGetIndex(pos, 1);
     var rad = Sk.ffi.remapToJs(radius);
     var color_js = PygameLib.extract_color(color);
     ctx.beginPath();
-    ctx.arc(center[0], center[1], rad, 0, 2 * Math.PI);
+    ctx.arc(x, y, rad, 0, 2 * Math.PI);
     if (width_js) {
         ctx.lineWidth = width_js;
-        ctx.strokeStyle = 'rgba(' + color_js[0] + ', ' + color_js[1] + ', ' + color_js[2] + ', ' + color_js[3] + ')';
+        ctx.strokeStyle = rgbaColorFromPygame(color_js);
         ctx.stroke();
     } else {
-        ctx.fillStyle = 'rgba(' + color_js[0] + ', ' + color_js[1] + ', ' + color_js[2] + ', ' + color_js[3] + ')';
+        ctx.fillStyle = rgbaColorFromPygame(color_js);
         ctx.fill();
     }
 
-    return bbox(center[1] - rad, center[1] + rad, center[0] - rad, center[0] + rad);
+    return bbox(x - rad, y + rad, x - rad, y + rad);
 };
 
 //pygame.draw.arc()
@@ -92,58 +100,60 @@ var draw_oval = function (surface, color, rect, start_angle, stop_angle, width, 
     var ctx = surface.context2d;
     var width_js = Sk.ffi.remapToJs(width);
     var color_js = PygameLib.extract_color(color);
-    var rect_js = PygameLib.extract_rect(rect);
+
+    var left = skulptGetIndex(rect, 0);
+    var top = skulptGetIndex(rect, 1);
+    var w = skulptGetIndex(rect, 2);
+    var h = skulptGetIndex(rect, 3);
+
     var angles = [0, 0];
     angles[0] = Sk.ffi.remapToJs(start_angle);
     angles[1] = Sk.ffi.remapToJs(stop_angle);
-    var center = [0, 0];
-    center[0] = rect_js[0] + rect_js[2] / 2;
-    center[1] = rect_js[1] + rect_js[3] / 2;
+    var centerX = left + w / 2;
+    var centerY = top + h / 2;
 
     ctx.beginPath();
 
-    ctx.ellipse(center[0], center[1], rect_js[2] / 2, rect_js[3] / 2, 0, -angles[0], -angles[1], true);
+    ctx.ellipse(centerX, centerY, w / 2, h / 2, 0, -angles[0], -angles[1], true);
 
     if (width_js) {
         ctx.lineWidth = width_js;
-        ctx.strokeStyle = 'rgba(' + color_js[0] + ', ' + color_js[1] + ', ' + color_js[2] + ', ' + color_js[3] + ')';
+        ctx.strokeStyle = rgbaColorFromPygame(color_js);
         ctx.stroke();
     } else if (ellipse) {
-        ctx.fillStyle = 'rgba(' + color_js[0] + ', ' + color_js[1] + ', ' + color_js[2] + ', ' + color_js[3] + ')';
+        ctx.fillStyle = rgbaColorFromPygame(color_js);
         ctx.fill();
     }
 
-    return Sk.misceval.callsim(PygameLib.RectType, new Sk.builtin.tuple([rect_js[0], rect_js[1]]), new Sk.builtin.tuple([rect_js[2], rect_js[3]]));
+    return PygameLib.make_rect(left, top, w, h);
 };
 
 //pygame.draw.line()
 //line(Surface, color, start_pos, end_pos, width=1) -> Rect
 var draw_line = function (surface, color, start_pos, end_pos, width = 1) {
-    var width_js = Sk.ffi.remapToJs(width);
-    var start_pos_js = Sk.ffi.remapToJs(start_pos);
-    var end_pos_js = Sk.ffi.remapToJs(end_pos);
-    var color_js = PygameLib.extract_color(color);
-    var ctx = surface.context2d;
-    var ax = start_pos_js[0];
-    var ay = start_pos_js[1];
-    var bx = end_pos_js[0];
-    var by = end_pos_js[1];
-    var points;
+    const width_js = Sk.ffi.remapToJs(width);
+    const ax = skulptGetIndex(start_pos, 0);
+    const ay = skulptGetIndex(start_pos, 1);
+    const bx = skulptGetIndex(end_pos, 0);
+    const by = skulptGetIndex(end_pos, 1);
+    let points;
     if (Math.abs(ax - bx) <= Math.abs(ay - by)) {
-        points = [new Sk.builtin.tuple([ax - width_js / 2, ay]), new Sk.builtin.tuple([ax + width_js / 2, ay]),
-            new Sk.builtin.tuple([bx + width_js / 2, by]), new Sk.builtin.tuple([bx - width_js / 2, by])];
-        points = new Sk.builtin.list(points);
+        points = new Sk.builtin.list([new Sk.builtin.tuple([ax - width_js / 2, ay]),
+                                      new Sk.builtin.tuple([ax + width_js / 2, ay]),
+                                      new Sk.builtin.tuple([bx + width_js / 2, by]),
+                                      new Sk.builtin.tuple([bx - width_js / 2, by])]);
     }
     else {
-        points = [new Sk.builtin.tuple([ax, ay - width_js / 2]), new Sk.builtin.tuple([ax, ay + width_js / 2]),
-            new Sk.builtin.tuple([bx, by + width_js / 2]), new Sk.builtin.tuple([bx, by - width_js / 2])];
-        points = new Sk.builtin.list(points);
+        points = new Sk.builtin.list([new Sk.builtin.tuple([ax, ay - width_js / 2]),
+                                      new Sk.builtin.tuple([ax, ay + width_js / 2]),
+                                      new Sk.builtin.tuple([bx, by + width_js / 2]),
+                                      new Sk.builtin.tuple([bx, by - width_js / 2])]);
     }
     draw_polygon(surface, color, points);
-    var left = Math.min(start_pos_js[0], end_pos_js[0]);
-    var right = Math.max(start_pos_js[0], end_pos_js[0]);
-    var top = Math.min(start_pos_js[1], end_pos_js[1]);
-    var bot = Math.max(start_pos_js[1], end_pos_js[1]);
+    const left = Math.min(ax, bx);
+    const right = Math.max(ax, bx);
+    const top = Math.min(ay, by);
+    const bot = Math.max(ay, by);
     return bbox(top, bot, left, right);
 };
 
@@ -152,41 +162,66 @@ var draw_line = function (surface, color, start_pos, end_pos, width = 1) {
 var draw_lines = function (surface, color, closed, pointlist, width = 1) {
     var width_js = Sk.ffi.remapToJs(width);
     var closed_js = Sk.ffi.remapToJs(closed);
-    var pointlist_js = Sk.ffi.remapToJs(pointlist);
     var color_js = PygameLib.extract_color(color);
     var ctx = surface.context2d;
+
+    const iter = Sk.abstr.iter(pointlist);
+    const first = Sk.abstr.iternext(iter, false);
+
+    let min_w, min_h, max_h, max_w;
+    const extend = (x, y) => {
+        min_w = Math.min(min_w, x);
+        max_w = Math.max(max_w, x);
+        min_h = Math.min(min_h, y);
+        max_h = Math.max(max_h, y);
+    }
+    const initializeSize = (x, y) => {
+        min_w = x;
+        max_w = x;
+        min_h = y;
+        max_h = y;
+    }
     if (!width_js) {
         ctx.beginPath();
         ctx.lineWidth = width_js;
-        var first_point = pointlist_js[0];
-        var max_h = first_point[1], max_w = first_point[0];
-        var min_h = first_point[1], min_w = first_point[0];
-        ctx.moveTo(first_point[0], first_point[1]);
-        for (var i = 0; i < pointlist_js.length; i++) {
-            ctx.lineTo(pointlist_js[i][0], pointlist_js[i][1]);
-            max_w = Math.max(max_w, pointlist_js[i][0]);
-            min_w = Math.min(min_w, pointlist_js[i][0]);
-            max_h = Math.max(max_h, pointlist_js[i][1]);
-            min_h = Math.min(min_h, pointlist_js[i][1]);
-        }
+        initializeSize(skulptGetIndex(first, 0), skulptGetIndex(first, 1));
+        ctx.moveTo(min_w, min_h);
+
+        Sk.misceval.iterFor(iter, function (point) {
+            const x = skulptGetIndex(point, 0);
+            const y = skulptGetIndex(point, 1);
+            ctx.lineTo(x, y);
+            extend(x, y);
+        });
+
         if (closed_js) {
             ctx.closePath();
         }
-    }
-    else {
-        for (var i = 0; i < pointlist_js.length - 1; i++) {
-            draw_line(surface, color, new Sk.builtin.tuple([pointlist_js[i][0], pointlist_js[i][1]]), new Sk.builtin.tuple([pointlist_js[i + 1][0], pointlist_js[i + 1][1]]), width);
-        }
-        return bbox(0, 0, 0, 0);
+        console.log("W", width_js);
+    } else {
+        let cx =skulptGetIndex(first, 0);
+        let cy =skulptGetIndex(first, 1);
+        initializeSize(cx, cy);
+        Sk.misceval.iterFor(iter, function (point) {
+            const nx = skulptGetIndex(point, 0);
+            const ny = skulptGetIndex(point, 1);
+            draw_line(surface, color, new Sk.builtin.tuple([cx, cy]), new Sk.builtin.tuple([nx, ny]), width);
+            extend(nx, ny);
+            cx = nx;
+            cy = ny;
+        });
+        console.log("L", width_js, min_h, max_h, min_w, max_w);
+        return bbox(min_h, max_h, min_w, max_w);
     }
 
     if (width_js) {
-        ctx.strokeStyle = 'rgba(' + color_js[0] + ', ' + color_js[1] + ', ' + color_js[2] + ', ' + color_js[3] + ')';
+        ctx.strokeStyle = rgbaColorFromPygame(color_js);
         ctx.stroke();
     } else {
-        ctx.fillStyle = 'rgba(' + color_js[0] + ', ' + color_js[1] + ', ' + color_js[2] + ', ' + color_js[3] + ')';
+        ctx.fillStyle = rgbaColorFromPygame(color_js);
         ctx.fill();
     }
+    console.log("A", width_js, min_h, max_h, min_w, max_w);
     return bbox(min_h, max_h, min_w, max_w);
 };
 
